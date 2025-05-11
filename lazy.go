@@ -12,18 +12,28 @@ import (
 type HandlerFunc func(*Context)
 
 // Engine implement the interface of ServeHTTP
-type Engine struct {
-	*RouterGroup
-	router        *router
-	groups        []*RouterGroup     // store all groups
-	htmlTemplates *template.Template // for html render
-	funcMap       template.FuncMap   // for html render
-}
-type RouterGroup struct {
-	prefix      string
-	middlewares []HandlerFunc // support middleware
-	parent      *RouterGroup  // support nesting
-	engine      *Engine       // all groups share a Engine instance
+type (
+	RouterGroup struct {
+		prefix      string
+		middlewares []HandlerFunc // support middleware
+		parent      *RouterGroup  // support nesting
+		engine      *Engine       // all groups share a Engine instance
+	}
+
+	Engine struct {
+		*RouterGroup
+		router        *router
+		groups        []*RouterGroup     // store all groups
+		htmlTemplates *template.Template // for html render
+		funcMap       template.FuncMap   // for html render
+	}
+)
+
+// Default use Logger() & Recovery middlewares
+func Default() *Engine {
+	engine := New()
+	engine.Use(Logger(), Recovery())
+	return engine
 }
 
 // New is the constructor of lazy.Engine
@@ -31,8 +41,6 @@ func New() *Engine {
 	engine := &Engine{router: newRouter()}
 	engine.RouterGroup = &RouterGroup{engine: engine}
 	engine.groups = []*RouterGroup{engine.RouterGroup}
-	engine.Use(Logger())
-	engine.Use(Recovery())
 	return engine
 }
 
